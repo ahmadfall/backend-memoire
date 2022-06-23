@@ -2,8 +2,13 @@ var express = require('express');
 const { db } = require('../database');
 const { hashSync, genSaltSync, compareSync } = require("bcrypt");
 var router = express.Router();
-async function verifySession(req, res, next) {
 
+async function verifySession(req, res, next) {
+    const token = req.headers.authorization;
+    let obj = JSON.parse(token)
+
+    let email = obj.name;
+    //doit mettre q jour
     const session = req.session.loggedin;
 
 
@@ -20,13 +25,17 @@ async function verifySession(req, res, next) {
     }
 }
 
-router.get('/monprofil', verifySession, async (req, res, next) => {
+router.get('/monprofil', async (req, res, next) => {
 
-    const email = req.session.name;
+   // const email = req.session.name;
+    const token = req.headers.authorization;
+    let obj = JSON.parse(token)
+
+    let email = obj.name;
 
     user = await db.getUserByEmail(email)
         .then((result) => {
-
+            
             return res.json(result)
 
         })
@@ -38,7 +47,7 @@ router.get('/monprofil', verifySession, async (req, res, next) => {
 })
 
 let password;
-router.put('/modifiePassword', verifySession, async (req, res, next) => {
+router.put('/modifiePassword', async (req, res, next) => {
     //l'idee on dmd de saisir l'ancien mot d pass,puis on verifie la base s'il est conforme 
     //si oui on le redirige vers un nouveau page ,on l'invite a saisir un nouveau mot de passe
     //enfin ,on met a jour et le notifie ca new password
@@ -107,7 +116,10 @@ router.put('/newPassword', verifySession, async (req, res, next) => {
 
 router.get('/mescommande', verifySession, async (req, res, next) => {
 
-    const email = req.session.name;
+    const token = req.headers.authorization;
+    let obj = JSON.parse(token)
+
+    let email = obj.name;
 
 
     let idClient;
@@ -134,9 +146,12 @@ router.get('/mescommande', verifySession, async (req, res, next) => {
 
 })
 
-router.post('/temoignage', verifySession, async (req, res, next) => {
+router.post('/temoignage', async (req, res, next) => {
 
-    const email = req.session.name;
+    const token = req.headers.authorization;
+    let obj = JSON.parse(token)
+
+    let email = obj.name;
     let description = req.body.description;
     let username, name, id;
 

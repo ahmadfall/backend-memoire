@@ -8,19 +8,9 @@ const { validate, linkSchema3 } = require('../validator/valid');
 
 
 
-// affichage menu
-
-router.get('/menu', function (req, res, next) {
-    // render to views/user/add.ejs
-    res.render('hoome', {
-        // title: 'Login',
-        // email: '',
-        // password: ''     
-    })
-})
 
 
-//validate(linkSchema3), 
+
 router.post('/register', async (req, res, next) => {
 
     const email = req.body.email;
@@ -47,25 +37,6 @@ router.post('/register', async (req, res, next) => {
 
 
 
-//display login page
-router.get('/', function (req, res, next) {
-    // render to views/user/add.ejs
-    res.render('login', {
-        title: 'Login',
-        email: '',
-        password: ''
-    })
-})
-
-// display login page
-router.get('/login', function (req, res, next) {
-    // render to views/user/add.ejs
-    res.render('login', {
-        title: 'Login',
-        email: '',
-        password: ''
-    })
-})
 
 
 //authenticate user
@@ -89,7 +60,8 @@ router.post('/authentication', async function (req, res, next) {
                 req.session.name1 = result;
                 console.log(req.session)
 
-               return res.sendStatus(200)
+              // return res.sendStatus(200)
+              return res.status(200).send(req.session);
                
             }
             return res.sendStatus(400)
@@ -98,7 +70,7 @@ router.post('/authentication', async function (req, res, next) {
 
         })
         .catch((err) => {
-            // res.redirect('/auth/login')
+          
             return res.sendStatus(400)
         })
 
@@ -106,27 +78,13 @@ router.post('/authentication', async function (req, res, next) {
 })
 
 
-//display home page
-router.get('/home', function (req, res, next) {
-    if (req.session.loggedin) {
 
-        res.render('home', {
-            title: "Dashboard",
-            name: req.session.name,
-        });
-
-    } else {
-
-        req.flash('success', 'Please login first!');
-        res.redirect('/auth/login');
-    }
-});
 
 // Logout user
 router.get('/logout', function (req, res) {
     req.session.destroy();
 
-    res.redirect('/auth/login');
+   
 });
 
 module.exports = router;

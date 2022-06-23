@@ -39,6 +39,8 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+//app.use('/images', express.static('images'));
+
 app.use(session({
   secret: '123458cat',
   resave: false,

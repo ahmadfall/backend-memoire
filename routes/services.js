@@ -19,6 +19,8 @@ var storage = multer.diskStorage({
     },
     filename: (req, file, callBack) => {
         callBack(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname))
+
+        //callBack(null, file.fieldname + '-' + Date.now() )
     }
 
 })
@@ -27,24 +29,25 @@ var upload = multer({
     storage: storage
 
 });
+//, validate(linkSchema)
+router.post('/service', upload.single('image'), async (req, res) => {
 
-router.post('/service', verifySession, upload.single('image'), validate(linkSchema), async (req, res) => {
-  
-
+    //
     let { Name_Service, Description_Service, Prix_Service, heure_depart, nbre_place } = req.body;
 
 
-     console.log(heure_depart, req.session)
+    // console.log(heure_depart, req.session)
 
-    const image = req.file.filename;
-
-    enregistrement = await db.insertService(Name_Service, Prix_Service, Description_Service, image, heure_depart, nbre_place)
-        .then((result) => {
-            res.sendStatus(200)
-        })
-        .catch((err) => {
-            res.sendStatus(400)
-        })
+    // const image = req.file.filename;
+    const image = req.file;
+    console.log(Name_Service, image)
+    // enregistrement = await db.insertService(Name_Service, Prix_Service, Description_Service, image, heure_depart, nbre_place)
+    //   .then((result) => {
+    //     res.sendStatus(200)
+    // })
+    //.catch((err) => {
+    //    res.sendStatus(400)
+    //})
 
 
 
@@ -54,7 +57,12 @@ router.post('/service', verifySession, upload.single('image'), validate(linkSche
 /**verifySession */
 
 router.get('/service', async (req, res, next) => {
-    console.log(req.session)
+    //  const token = req.headers['authorization'];
+    // const token = req.headers.authorization;
+    // let obj = JSON.parse(token)
+
+
+    // console.log(obj.name)
     liste_service = await db.allService()
         .then((result) => {
             return res.json(result)
@@ -66,9 +74,10 @@ router.get('/service', async (req, res, next) => {
 
 
 
-router.put('/:id', verifySession, upload.single('image'), async (req, res, next) => {
+router.put('/:id', upload.single('image'), async (req, res, next) => {
     // res.render('miseajour');
-    let idService = req.params.id
+    let idService = req.body.idService
+    // let idService = req.params.id
     const image = req.file.filename;
     let { Name_Service, Prix_Service, Description_Service, heure_depart, nbre_place } = req.body;
 
@@ -89,10 +98,10 @@ router.put('/:id', verifySession, upload.single('image'), async (req, res, next)
 
 })
 
-router.delete('/delete/:id', verifySession, async (req, res, next) => {
+router.delete('/delete/:id', async,verifySession, (req, res, next) => {
 
-    let idService = req.params.id;
-
+    //let idService = req.params.id;
+    let idService = req.body.idService
 
     let cool = await db.getOneService(idService)
 
@@ -121,49 +130,16 @@ router.delete('/delete/:id', verifySession, async (req, res, next) => {
 })
 
 
-router.post('/apropos', verifySession, upload.single('image'), async (req, res) => {
-    // res.render('service');
-
-    let { description } = req.body;
-
-
-
-
-    const image = req.file.filename;
-
-    enregistrement = await db.insertPropo(description, image)
-        .then((result) => {
-            res.sendStatus(200)
-        })
-        .catch((err) => {
-            res.sendStatus(400)
-        })
 
 
 
 
 
-});
-router.get('/apropos', verifySession, async (req, res, next) => {
-
-    const email = req.session.name;
-
-    const info = await db.Apropos()
-        .then((result) => {
-
-            return res.json(result)
-
-        })
-        .catch((err) => {
-            return console.log(err)
-        })
 
 
-})
+router.get('/temoignage',  async (req, res, next) => {
 
-router.get('/temoignage', verifySession, async (req, res, next) => {
 
-    const email = req.session.name;
 
     const info = await db.AllTemoignage()
         .then((result) => {
@@ -181,18 +157,22 @@ router.get('/temoignage', verifySession, async (req, res, next) => {
 
 async function verifySession(req, res, next) {
 
-    const session = req.session.loggedin;
+    const token = req.headers.authorization;
+    let obj = JSON.parse(token)
 
+    let user = obj.name;
+    // const session = obj.loggedin;
 
-    if (session === undefined) {
+    //console.log(session, user)
 
-
-        return res.json("veuilez bien vous connecter d'abord");
-    } else {
-        let user = req.session.name;
+    if (user) {
+        next()
+        // let user = req.session.name;
         userfound = await db.getUserByEmail(user)
             .then((result) => {
-                if (result.role === "admin") {
+                console.log(result[0].role)
+                if (result[0].role === "admin") {
+                    console.log(result[0].role)
                     next()
                 } else {
                     res.json('vous n\'etes pas un administrateur')

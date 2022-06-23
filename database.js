@@ -536,6 +536,18 @@ db.transaction = (id) => {
   })
 }
 
+db.NumTEl = (idReservation) => {
+  return new Promise((resolve, reject) => {
+    connection.query('SELECT telephone FROM reservation WHERE idReservation=?', [idReservation], (error, users) => {
+      if (error) {
+        return reject(error);
+      }
+      return resolve(users[0].telephone);
+    });
+  });
+};
+
+
 
 
 module.exports = { connection, db };

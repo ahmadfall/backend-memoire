@@ -1,21 +1,98 @@
 var express = require('express');
-
+var qs = require("querystring")
 var router = express.Router();
 var { connection, db } = require('../database.js');
 const axios = require("axios");
 const { validate, linkSchema2 } = require('../validator/valid');
+const { object } = require('yup');
+let idReservation;
+let telephone;
 
-const accountSid = 'ACd0b284eebe7c1fbca383639a038dccab';
-const authToken = 'a51cd04cfb7df02f23833159f765349e';
-const client = require('twilio')(accountSid, authToken);
+async function sms (){
+    
+cool= await db.NumTEl(idReservation)
+    .then((response) => {
+        console.log(response)
+        return telephone = response
+    }).catch((err) => {
+        return err
+    })
+} 
 
-// client.messages
-//   .create({
-//      body: 'This is the ship that made the Kessel Run in fourteen parsecs?',
-//      from: '+18507573983',
-//      to: '+221766475379'
-//    })
-//   .then(message => console.log(message.sid));
+
+let tokens;
+async function getTokens() {
+
+
+    const data = {
+        grant_type: 'client_credentials',
+        client_id: 'ARqv15HUCIevJ4cCvAo96Nn8G5AAP8dY',
+        client_secret: '6qW7XsQVqk2gyA69'
+    };
+    const options = {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+
+        data: qs.stringify(data),
+        url: 'https://api.orange.com/oauth/v3/token',
+    }
+
+    axios.request(options).then(function (res) {
+        tokens = res.data.access_token;
+        sms()
+        envoiSms(telephone, tokens)
+        //insertion dans la base numero ,
+        console.log(tokens)
+
+    }).catch(function (err) {
+        console.log("error = " + err);
+    });
+}
+
+
+
+function envoiSms(receiver, tokens) {
+    receiver = telephone;
+    console.log(receiver)
+    const message = "Votre reservation a bien ete effectue ,merci de se rendre avant l'heure de depart "
+    const data =
+    {
+        "outboundSMSMessageRequest": {
+            "address": `tel:+221${receiver}`,
+            "senderAddress": "tel:+221779396072",
+            "outboundSMSTextMessage": {
+                "message": message
+            }
+        }
+    }
+
+
+
+
+
+
+    const options = {
+        method: 'POST',
+        headers: {
+            'content-type': 'application/json',
+            'Authorization': "Bearer " + tokens,
+
+        },
+        data: JSON.stringify(data),
+        url: "https://api.orange.com/smsmessaging/v1/outbound/tel%3A%2B221779396072/requests"
+    }
+
+    axios.request(options).then(function (res) {
+        console.log("test")
+        console.log(res);
+
+
+    }).catch(function (err) {
+        console.log('boom')
+        console.log(err)
+        console.log("error = " + err);
+    });
+}
 
 
 
@@ -38,15 +115,19 @@ router.post('/my-ipn', async (req, res) => {
 
 
     if (SHA256Encrypt(my_api_secret) === api_secret_sha256 && SHA256Encrypt(my_api_key) === api_key_sha256) {
-console.log(command_name,item_price)
+        console.log(command_name, item_price)
         // cas de succes on l'enregistre dans la base de donnee
         save = await db.payement(idReservation)
 
             .then((res) => {
-                const email = req.session.name
+                
+                const token = req.headers.authorization;
+                let obj = JSON.parse(token)
+
+                let email = obj.name;
                 function sendEmail(email, command_name, item_price, devise) {
                     // var email = email;
-
+                   
                     var mail = nodemailer.createTransport({
                         service: 'gmail',
                         auth: {
@@ -58,7 +139,7 @@ console.log(command_name,item_price)
                         from: 'servicetransport2222@gmail.com',  //tutsmake@gmail.com
                         to: email,
                         subject: 'Notification du payement effectue avec succes  ',
-                        html: '<p> la commande passee est`${command_name}`,le prix est `${item_price}` payee en `${devise}` Merci de nous faire confiance Bon voyage </p>'
+                        html: `<p> la commande passee est ${command_name},le prix est ${item_price} payee en ${devise} Merci de nous faire confiance Bon voyage </p>`
                     };
                     mail.sendMail(mailOptions, function (error, info) {
                         if (error) {
@@ -69,6 +150,7 @@ console.log(command_name,item_price)
                     });
                 }
                 sendEmail(email, command_name, item_price, devise)
+                getTokens()
             })
             .catch((err) => {
                 return console.log(err)
@@ -106,12 +188,12 @@ async function verifySession(req, res, next) {
         userfound = await db.getUserByEmail(user)
             .then((result) => {
                 client.messages
-  .create({
-     body: 'This is the ship that made the Kessel Run in fourteen parsecs?',
-     from: '+18507573983',
-     to: '+221779396072'
-   })
-  .then(message => console.log(message.sid));
+                    .create({
+                        body: 'This is the ship that made the Kessel Run in fourteen parsecs?',
+                        from: '+18507573983',
+                        to: '+221779396072'
+                    })
+                    .then(message => console.log(message.sid));
                 next()
                 return result
 
@@ -124,9 +206,9 @@ async function verifySession(req, res, next) {
 
     }
 }
-let idReservation;
+//let idReservation;
 //verifySession
-router.post('/reservation',  async (req, res1, next) => {
+router.post('/reservation', async (req, res1, next) => {
     // res.render('reservation.ejs')
     ref_reservation = (len, charSet) => {
         return new Promise((resolve, reject) => {
@@ -140,10 +222,10 @@ router.post('/reservation',  async (req, res1, next) => {
         });
     }
 
-       //console.log(req.body)
+    //console.log(req.body)
     let { telephone, nbre_de_place_reserve, ref_reservation1, idService } = req.body;
-       
-   let Name_Service, Description_Service, Prix_du_Service;
+
+    let Name_Service, Description_Service, Prix_du_Service;
 
     servicedmd = await db.AllServiceWithid(idService)
         .then((result) => {
@@ -164,10 +246,14 @@ router.post('/reservation',  async (req, res1, next) => {
     }).catch((err) => {
         return err
     });
-    
-    console.log(req.session)
 
-    let user = req.session.name;
+    // console.log(req.session)
+    const token = req.headers.authorization;
+    let obj = JSON.parse(token)
+
+    let user = obj.name;
+    // console.log(user)
+    //let user = req.session.name;
     userfound = await db.getUserByEmail(user)
         .then((result) => {
             //renvoie id du client
@@ -193,7 +279,7 @@ router.post('/reservation',  async (req, res1, next) => {
                         command_name: Description_Service,
                         "env": "test",
                         ipn_url: "https://localhost:4000/reservation/my-ipn",
-                        success_url: "https://localhost:4000/",
+                        success_url: "http://localhost:4200/",
                         cancel_url: "https://localhost:4000/"
 
                     };
@@ -211,15 +297,16 @@ router.post('/reservation',  async (req, res1, next) => {
                         headers: headers
                     })
                         .then(function (response) {
-                           console.log(response)
-                            return response.data.redirectUrl
                             
+                            return response.data.redirectUrl
+
                         })
                         .then(function (response) {
-
-                            
-                            response.toString()
-                            res1.redirect(response)
+                            // let k = new object();
+                            // k.laye = response
+                            //res1.status(200).send(k)                         // response.toString()
+                            //res1.redirect(response)
+                            res1.status(200).json(response)
 
                         })
                         .catch((err) => {
